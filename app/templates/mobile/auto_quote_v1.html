@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="{{ payload.locale }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ payload.quote.display_number }}</title>
+  {% include "output/_styles.html" %}
+</head>
+<body>
+  <main class="quote-sheet">
+    <header class="hero">
+      <div class="brand">{% if payload.get('assets', {}).get('logo') %}<span class="brand-logo"><img src="{{ payload.get('assets', {}).get('logo', '') }}" alt="{{ payload.labels['brand.name'] }}"></span>{% endif %}{{ payload.labels['brand.name'] }}</div>
+      <h1>{{ payload.labels['quote.title'] }}</h1>
+      <p class="hero-subtitle">{{ payload.labels['quote.subtitle'] }}</p>
+      <div class="quote-number">{{ payload.labels['quote.number'] }} · {{ payload.quote.display_number }}</div>
+    </header>
+    <div class="content">
+      <section class="summary-grid">
+        <div class="summary-item"><div class="summary-label">{{ payload.labels['quote.prepared_for'] }}</div><div class="summary-value">{{ payload.quote.customer_name }}</div></div>
+        <div class="summary-item"><div class="summary-label">{{ payload.labels['quote.carrier'] }}</div><div class="summary-value">{{ payload.policy.carrier }}</div></div>
+        <div class="summary-item"><div class="summary-label">{{ payload.labels['quote.vehicle'] }}</div><div class="summary-value">{{ payload.policy.vehicle_summary or '—' }}</div></div>
+        <div class="summary-item"><div class="summary-label">{{ payload.labels['quote.valid_until'] }}</div><div class="summary-value">{{ payload.policy.expiration_date }}</div></div>
+      </section>
+
+      <section class="section">
+        <div class="section-heading"><span class="section-number">1</span><h2>{{ payload.labels['quote.plans'] }}</h2></div>
+        <div class="plan-grid" style="--plan-count: {{ payload.plans|length }}">
+          {% for plan in payload.plans %}
+          <article class="plan-card{% if plan.recommended %} recommended{% endif %}">
+            {% if plan.recommended %}<span class="recommended-badge">{{ payload.labels['quote.recommended'] }}</span>{% endif %}
+            <div class="plan-name">{{ plan.display_name }}</div>
+            <div class="plan-price">{{ plan.premium_formatted }}</div>
+            <div class="plan-period">{{ plan.period_label }}</div>
+            {% if plan.short_note %}<div class="plan-note">{{ plan.short_note }}</div>{% endif %}
+          </article>
+          {% endfor %}
+        </div>
+        {% if payload.savings and payload.savings.positive %}
+        <div class="savings"><span>{{ payload.labels['quote.you_save'] }}</span><strong>{{ payload.savings.amount_formatted }} · {{ payload.savings.percentage }}%</strong></div>
+        {% endif %}
+      </section>
+
+      <section class="section">
+        <div class="section-heading"><span class="section-number">2</span><h2>{{ payload.labels['quote.coverage_explained'] }}</h2></div>
+        <div class="coverage-list">
+          {% for coverage in payload.coverages %}
+          <article class="coverage-row">
+            <div><div class="coverage-name">{{ coverage.label }}</div><div class="coverage-value">{{ coverage.value }}</div></div>
+            <div><div class="coverage-description">{{ coverage.description }}</div>{% if coverage.example %}<div class="coverage-example">{{ coverage.example }}</div>{% endif %}</div>
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+
+      {% if payload.show_renters_benefits %}
+      <section class="section renters-card">
+        <h3>{{ payload.labels['quote.renters_title'] }}</h3>
+        <ul>{% for benefit in payload.renters_benefits %}<li>{{ benefit }}</li>{% endfor %}</ul>
+        <div class="renters-subtitle">{{ payload.labels['quote.renters_subtitle'] }}</div>
+      </section>
+      {% endif %}
+
+      {% if payload.quote.customer_facing_note %}<div class="customer-note">{{ payload.quote.customer_facing_note }}</div>{% endif %}
+
+      <section class="section contact-card">
+        <div>
+          <h3>{{ payload.labels['quote.contact_agent'] }}</h3>
+          <div class="contact-line"><strong>{{ payload.agent.display_name }}</strong></div>
+          <div class="contact-line">{{ payload.agent.phone }} · {{ payload.agent.email }}</div>
+          {% if payload.agent.license_number %}<div class="contact-line">{{ payload.labels['quote.license'] }}: {{ payload.agent.license_number }}</div>{% endif %}
+        </div>
+        {% if payload.get('assets', {}).get('qr_code') %}<div class="qr-box"><img class="qr-image" src="{{ payload.get('assets', {}).get('qr_code', '') }}" alt="Agent QR Code"></div>{% endif %}
+      </section>
+      <footer class="disclaimer">{{ payload.disclaimer }}</footer>
+    </div>
+    <div class="footer-stripe"></div>
+  </main>
+</body>
+</html>

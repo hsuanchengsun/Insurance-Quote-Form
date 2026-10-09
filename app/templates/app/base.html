@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Quote Builder{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="app-header">
+    <a class="app-brand" href="/"><span class="app-brand-mark" aria-hidden="true">QB</span><span>Quote Builder <small>報價工具</small></span></a>
+    {% if user %}
+    <nav class="app-nav">
+      <a href="/">報價管理</a>
+      <a href="/profile">專員資料</a>
+      <form method="post" action="/logout"><button class="link-button" type="submit">登出</button></form>
+    </nav>
+    {% endif %}
+  </header>
+  {% block body %}{% endblock %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

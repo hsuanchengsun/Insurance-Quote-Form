@@ -1,0 +1,18 @@
+{% extends "app/base.html" %}
+{% block title %}{{ quote.quote_number }}｜版本歷史{% endblock %}
+{% block body %}
+<main class="page-container narrow-page">
+  <a class="back-link" href="/">← 返回報價管理</a>
+  <section class="page-heading-row detail-heading">
+    <div><span class="eyebrow">QUOTE HISTORY</span><h1>{{ quote.quote_number }}</h1><p>{{ quote.customer_name or '尚未填寫客戶姓名' }}</p></div>
+    <div class="toolbar-actions"><a class="button button-secondary" href="/quotes/{{ quote.id }}/edit">編輯目前草稿</a><form method="post" action="/api/quotes/{{ quote.id }}/copy"><button class="button button-primary" type="submit">複製為新報價</button></form></div>
+  </section>
+  <section class="detail-summary panel"><div><span>狀態</span><strong>{{ quote.status }}</strong></div><div><span>最新版本</span><strong>V{{ quote.latest_version_number or '—' }}</strong></div><div><span>有效日期</span><strong>{{ quote.expiration_date }}</strong></div></section>
+  <section class="panel"><div class="panel-heading"><h2>版本與輸出紀錄</h2></div>
+    {% if quote.versions %}<div class="version-list">{% for version in quote.versions|reverse %}<article class="version-card"><div class="version-marker">V{{ version.version_number }}</div><div class="version-main"><div><strong>{{ quote.quote_number }}-V{{ version.version_number }}</strong><span class="status status-{{ 'generated' if version.version_status == 'current' else 'draft' }}">{{ version.version_status }}</span></div><p>{{ version.locale }} · {{ version.created_at.strftime('%Y-%m-%d %H:%M') }}{% if version.change_note %} · {{ version.change_note }}{% endif %}</p><div class="file-row">{% for file in version.generated_files %}<a class="file-chip" href="/files/{{ file.id }}/download">↓ {{ '手機長圖 PNG' if file.file_type == 'mobile_png' else '正式 PDF' }}</a>{% endfor %}</div></div></article>{% endfor %}</div>
+    {% else %}<div class="empty-state"><h3>尚未建立正式版本</h3><p>回到編輯頁完成驗證並產出 PNG 與 PDF。</p></div>{% endif %}
+  </section>
+  {% if quote.status != 'Archived' %}<form method="post" action="/api/quotes/{{ quote.id }}/archive" class="archive-form"><button class="button button-danger" type="submit">封存此報價</button></form>{% endif %}
+</main>
+{% endblock %}
+

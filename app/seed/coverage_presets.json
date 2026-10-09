@@ -1,0 +1,13 @@
+[
+  {"code":"bodily_injury","values":["$25,000 / $50,000","$50,000 / $100,000","$100,000 / $300,000"],"sort_order":10},
+  {"code":"property_damage","values":["$25,000","$50,000","$100,000"],"sort_order":20},
+  {"code":"uninsured_motorist","values":["$25,000 / $50,000","$50,000 / $100,000","$100,000 / $300,000"],"sort_order":30},
+  {"code":"collision_deductible","values":["$250","$500","$1,000","$2,000"],"sort_order":40},
+  {"code":"comprehensive_deductible","values":["$100","$250","$500","$1,000"],"sort_order":50},
+  {"code":"medical_payments","values":["Not included","$1,000","$2,000","$5,000","$10,000"],"sort_order":60},
+  {"code":"rental_reimbursement","values":["Not included","$30/day, up to 30 days","$40/day, up to 30 days","$50/day, up to 30 days"],"sort_order":70},
+  {"code":"roadside_assistance","values":["Included","Not included"],"sort_order":80},
+  {"code":"glass_coverage","values":["Not included","$0 deductible","$100 deductible","Same as comprehensive"],"sort_order":90},
+  {"code":"gap_coverage","values":["Included","Not included"],"sort_order":100}
+]
+

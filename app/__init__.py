@@ -1,0 +1,2 @@
+"""Insurance Quote Builder application."""
+

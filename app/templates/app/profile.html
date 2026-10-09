@@ -1,0 +1,18 @@
+{% extends "app/base.html" %}
+{% block title %}專員資料｜Quote Builder{% endblock %}
+{% block body %}
+<main class="page-container narrow-page">
+  <section class="page-heading-row"><div><span class="eyebrow">AGENT PROFILE</span><h1>專員資料</h1><p>正式產出時會將這些資料保存到不可變版本快照。</p></div></section>
+  {% if request.query_params.get('saved') %}<div class="alert alert-success">專員資料已更新。</div>{% endif %}
+  <section class="panel profile-panel"><form method="post" class="form-grid">
+    <label>英文姓名<input name="display_name" value="{{ user.display_name }}" required></label>
+    <label>中文姓名<input name="chinese_name" value="{{ user.chinese_name or '' }}"></label>
+    <label>電話<input name="phone" value="{{ user.phone }}" required></label>
+    <label>Email<input name="email" type="email" value="{{ user.email }}" required></label>
+    <label>執照號碼<input name="license_number" value="{{ user.license_number or '' }}"></label>
+    <label>辦公室地址<input name="office_address" value="{{ user.office_address or '' }}"></label>
+    <div class="span-2 form-footer"><button class="button button-primary" type="submit">儲存專員資料</button></div>
+  </form></section>
+</main>
+{% endblock %}
+

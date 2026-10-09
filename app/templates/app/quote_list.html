@@ -1,0 +1,233 @@
+{% extends "app/base.html" %}
+{% block title %}報價管理｜Quote Builder{% endblock %}
+{% block body %}
+<main class="page-container">
+  <section class="page-heading-row">
+    <div><span class="eyebrow">QUOTE WORKSPACE</span><h1>報價管理</h1><p>管理草稿、正式版本與客戶輸出。</p></div>
+    <div class="heading-actions">
+      <button id="open-upload-modal-btn" class="button button-outline-accent" type="button">📄 上傳 PDF 快速填單</button>
+      <form method="post" action="/quotes"><button class="button button-primary" type="submit">＋ 新增空白報價</button></form>
+    </div>
+  </section>
+  <section class="stat-row">
+    <div class="stat-card"><span>全部報價</span><strong>{{ quotes|length }}</strong></div>
+    <div class="stat-card"><span>待完成草稿</span><strong>{{ quotes|selectattr('display_status', 'equalto', 'Draft')|list|length }}</strong></div>
+    <div class="stat-card"><span>已正式產出</span><strong>{{ quotes|selectattr('display_status', 'equalto', 'Generated')|list|length }}</strong></div>
+  </section>
+  <section class="panel">
+    <form class="filter-row" method="get">
+      <input name="q" value="{{ q }}" placeholder="搜尋客戶姓名或 Quote Number">
+      <select name="status_filter">
+        <option value="">所有狀態</option>
+        {% for option in ['Draft','Generated','Archived'] %}<option value="{{ option }}"{% if status_filter == option %} selected{% endif %}>{{ option }}</option>{% endfor %}
+      </select>
+      <button class="button button-secondary" type="submit">搜尋</button>
+    </form>
+    {% if quotes %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Quote Number</th><th>客戶</th><th>有效日期</th><th>版本</th><th>狀態</th><th></th></tr></thead>
+      <tbody>{% for quote in quotes %}<tr>
+        <td><a class="strong-link" href="/quotes/{{ quote.id }}">{{ quote.quote_number }}</a></td>
+        <td>{{ quote.customer_name or '尚未填寫' }}</td>
+        <td>{{ quote.expiration_date }}</td>
+        <td>{{ 'V' ~ quote.latest_version_number if quote.latest_version_number else '—' }}</td>
+        <td><span class="status status-{{ quote.display_status|lower }}">{{ quote.display_status }}</span></td>
+        <td class="table-actions"><a href="/quotes/{{ quote.id }}/edit">編輯</a><a href="/quotes/{{ quote.id }}">歷史</a></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}
+    <div class="empty-state"><div class="empty-icon">▤</div><h3>尚無符合條件的報價</h3><p>建立第一份報價，開始測試三語 PNG 與 PDF 輸出。</p></div>
+    {% endif %}
+  </section>
+</main>
+
+<!-- PDF Upload Modal -->
+<div id="pdf-upload-modal" class="modal-backdrop" hidden>
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>📄 上傳 Carrier 報價單 PDF</h3>
+      <button id="close-modal-btn" class="modal-close" type="button">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="upload-form-wrap">
+        <p style="margin: 0 0 12px; color: var(--muted); font-size: 13px;">
+          上傳保險公司（Carrier）的報價單或 Declaration Page PDF，系統將自動提取客戶、保費與 Coverage 項目並建立草稿。
+        </p>
+        
+        <div id="dropzone" class="dropzone">
+          <div class="dropzone-icon">📥</div>
+          <div class="dropzone-text">
+            <strong>點擊選擇 PDF 或將檔案拖曳至此</strong>
+            <span>支援各大 Carrier 報價單 (最大 15MB)</span>
+          </div>
+          <input type="file" id="pdf-file-input" accept="application/pdf,.pdf" style="display: none;">
+        </div>
+
+        <div id="file-info-row" class="selected-file-info" style="display: none; margin-top: 12px;">
+          <span id="selected-filename">sample.pdf</span>
+          <button id="clear-file-btn" class="link-button" type="button" style="color: var(--danger); font-size: 12px;">✕ 清除</button>
+        </div>
+
+        <div style="margin-top: 16px;">
+          <label style="margin-bottom: 6px;">輸出預設語言
+            <select id="upload-locale" style="margin-top: 4px;">
+              <option value="zh-TW" selected>繁體中文 (zh-TW)</option>
+              <option value="zh-CN">简体中文 (zh-CN)</option>
+              <option value="en-US">English (en-US)</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="upload-error-box" class="alert alert-error" style="display: none; margin-top: 14px;"></div>
+
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+          <button id="cancel-upload-btn" class="button button-secondary" type="button">取消</button>
+          <button id="submit-upload-btn" class="button button-primary" type="button" disabled>開始智慧解析</button>
+        </div>
+      </div>
+
+      <div id="upload-loading-wrap" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <div>
+          <strong style="font-size: 16px; color: var(--accent-950); display: block;">正在分析報價單 PDF…</strong>
+          <span style="color: var(--muted); font-size: 13px; display: block; margin-top: 6px;">正在透過 Gemini 3.7 多模態理解並提取 Coverage 與方案保費，請稍候（約 3–8 秒）…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  const modal = document.getElementById('pdf-upload-modal');
+  const openBtn = document.getElementById('open-upload-modal-btn');
+  const closeBtn = document.getElementById('close-modal-btn');
+  const cancelBtn = document.getElementById('cancel-upload-btn');
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('pdf-file-input');
+  const fileInfoRow = document.getElementById('file-info-row');
+  const selectedFilename = document.getElementById('selected-filename');
+  const clearFileBtn = document.getElementById('clear-file-btn');
+  const submitBtn = document.getElementById('submit-upload-btn');
+  const localeSelect = document.getElementById('upload-locale');
+  const formWrap = document.getElementById('upload-form-wrap');
+  const loadingWrap = document.getElementById('upload-loading-wrap');
+  const errorBox = document.getElementById('upload-error-box');
+
+  let selectedFile = null;
+
+  function showModal() {
+    modal.hidden = false;
+    resetForm();
+  }
+
+  function hideModal() {
+    modal.hidden = true;
+    resetForm();
+  }
+
+  function resetForm() {
+    selectedFile = null;
+    fileInput.value = '';
+    fileInfoRow.style.display = 'none';
+    dropzone.style.display = 'grid';
+    submitBtn.disabled = true;
+    formWrap.style.display = 'block';
+    loadingWrap.style.display = 'none';
+    errorBox.style.display = 'none';
+    errorBox.textContent = '';
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+      errorBox.textContent = '請選擇 PDF 格式的文件檔案。';
+      errorBox.style.display = 'block';
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      errorBox.textContent = '檔案大小超過 15MB 限制。';
+      errorBox.style.display = 'block';
+      return;
+    }
+    selectedFile = file;
+    selectedFilename.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+    fileInfoRow.style.display = 'flex';
+    dropzone.style.display = 'none';
+    submitBtn.disabled = false;
+    errorBox.style.display = 'none';
+  }
+
+  openBtn.addEventListener('click', showModal);
+  closeBtn.addEventListener('click', hideModal);
+  cancelBtn.addEventListener('click', hideModal);
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) hideModal();
+  });
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+  ['dragenter', 'dragover'].forEach(name => {
+    dropzone.addEventListener(name, (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(name => {
+    dropzone.addEventListener(name, (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+    });
+  });
+
+  dropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    if (dt && dt.files && dt.files.length > 0) {
+      handleFile(dt.files[0]);
+    }
+  });
+
+  clearFileBtn.addEventListener('click', () => {
+    resetForm();
+  });
+
+  submitBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    formWrap.style.display = 'none';
+    loadingWrap.style.display = 'grid';
+    errorBox.style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('locale', localeSelect.value);
+
+    try {
+      const response = await fetch('/quotes/upload-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (response.ok && result.ok && result.redirect_url) {
+        window.location.href = result.redirect_url;
+      } else {
+        formWrap.style.display = 'block';
+        loadingWrap.style.display = 'none';
+        errorBox.textContent = result.message || '無法解析 PDF，請確認檔案格式或稍後再試。';
+        errorBox.style.display = 'block';
+      }
+    } catch (err) {
+      formWrap.style.display = 'block';
+      loadingWrap.style.display = 'none';
+      errorBox.textContent = '連線伺服器失敗，請確認網路與服務狀態。';
+      errorBox.style.display = 'block';
+    }
+  });
+})();
+</script>
+{% endblock %}
+

@@ -1,0 +1,27 @@
+{% extends "app/base.html" %}
+{% block title %}登入｜Quote Builder{% endblock %}
+{% block body %}
+<main class="login-layout">
+  <section class="login-copy">
+    <span class="eyebrow">QUOTE WORKSPACE</span>
+    <h1>把複雜的保障內容，<br>整理成客戶看得懂的報價。</h1>
+    <p>同一份資料，同步產出三語手機長圖與正式 PDF。</p>
+    <div class="login-feature-row"><span>✓</span> Coverage 白話說明</div>
+    <div class="login-feature-row"><span>✓</span> 方案價格醒目比較</div>
+    <div class="login-feature-row"><span>✓</span> 可追溯的正式版本</div>
+  </section>
+  <section class="login-card">
+    <div class="login-icon">QB</div>
+    <h2>專員登入</h2>
+    <p>使用 Demo 帳號進入報價工作區。</p>
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    <form method="post" action="/login" class="stack-form">
+      <label>帳號<input name="username" autocomplete="username" required autofocus></label>
+      <label>密碼<input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="button button-primary button-block" type="submit">登入工作區</button>
+    </form>
+    <div class="demo-hint">Demo：<strong>agent</strong>／<strong>demo1234</strong></div>
+  </section>
+</main>
+{% endblock %}
+
